@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from httpx import Request, Response
@@ -29,83 +29,86 @@ def mock_ocean_context() -> None:
         pass
 
 @pytest.fixture
-def mock_mongoatlas_client() -> MongoAtlasClient:
-    """Fixture to initialize MongoAtlasClient with mock parameters."""
-    return MongoAtlasClient(
-        public_key="dummy_public_key",
-        private_key="dummy_private_key",
-    )
-
+def client():
+    return MongoAtlasClient("test_id", "test_secret")
 
 @pytest.mark.asyncio
-async def test_client_initialization(mock_mongoatlas_client: MongoAtlasClient) -> None:
-    """Test the correct initialization of MongoAtlasClient."""
-    assert mock_mongoatlas_client.public_key == "dummy_public_key"
-    assert mock_mongoatlas_client.private_key == "dummy_private_key"
-    assert mock_mongoatlas_client.http_client is not None
-    assert mock_mongoatlas_client.http_client.headers.get("Content-Type") == "application/json"
+@patch("mongoatlas.client.http_async_client")
+async def test_get_access_token(mock_http_async_client, client):
+    mock_response = AsyncMock()
+    mock_response.raise_for_status = Mock(return_value=None)  # <-- Fix here
+    mock_response.json = Mock(return_value={"access_token": "abc123"})
+    mock_http_async_client.post.return_value = mock_response
 
-# @pytest.mark.asyncio
-# async def test_send_api_request_failure(mock_mongoatlas_client: MongoAtlasClient) -> None:
-#     """Test API request raising exceptions."""
-#     with patch.object(
-#         mock_mongoatlas_client, "send_api_request", new_callable=AsyncMock
-#     ) as mock_request:
-#         mock_request.return_value = Response(
-#             404, request=Request("GET", "http://example.com")
-#         )
-#         with pytest.raises(Exception):
-#             await mock_mongoatlas_client.send_api_request(endpoint="/v2/clusters", method="GET")
+    token = await client.get_access_token()
+    assert token == "abc123"
+    assert client.access_token == "abc123"
 
 @pytest.mark.asyncio
-async def test_get_cluster_list(mock_mongoatlas_client: MongoAtlasClient) -> None:
-    """Test send_api_request method to get cluster list."""
-    clusters_data = {
-        "links": [
-            {
-                "href": "https://cloud.mongodb.com/api/atlas",
-                "rel": "self"
-            }
-        ],
+@patch("mongoatlas.client.http_async_client")
+async def test_send_api_request(mock_http_async_client, client):
+    client.access_token = "abc123"
+    mock_response = AsyncMock()
+    mock_response.raise_for_status = Mock(return_value=None)  # <-- Fix here
+    mock_response.json = lambda: {"foo": "bar"}
+    mock_http_async_client.request.return_value = mock_response
+
+    result = await client.send_api_request("v2/test")
+    assert result == {"foo": "bar"}
+
+@pytest.mark.asyncio
+@patch.object(MongoAtlasClient, "send_api_request", new_callable=AsyncMock)
+async def test_get_clusters_flattening(mock_send_api_request, client):
+    mock_send_api_request.return_value = {
         "results": [
             {
+                "groupId": "g1",
+                "groupName": "Project1",
+                "orgId": "o1",
+                "orgName": "Org1",
                 "clusters": [
                     {
-                        "alertCount": 42,
-                        "authEnabled": True,
+                        "clusterId": "c1",
+                        "name": "Cluster1",
+                        "type": "REPLICASET",
+                        "alertCount": 2,
                         "availability": "available",
-                        "backupEnabled": True,
-                        "clusterId": "string",
-                        "dataSizeBytes": 42,
-                        "name": "string",
-                        "nodeCount": 42,
+                        "authEnabled": True,
+                        "backupEnabled": False,
                         "sslEnabled": True,
-                        "type": "REPLICA_SET",
-                        "versions": [
-                            "string"
-                        ]
+                        "versions": ["6.0"],
                     }
                 ],
-                "groupId": "string",
-                "groupName": "string",
-                "orgId": "string",
-                "orgName": "string",
-                "planType": "string",
-                "tags": [
-                    "string"
-                ]
             }
-        ],
-        "totalCount": 1
+        ]
     }
+    clusters = await client.get_clusters()
+    assert len(clusters) == 1
+    cluster = clusters[0]
+    assert cluster["organization_id"] == "o1"
+    assert cluster["organization_name"] == "Org1"
+    assert cluster["project_id"] == "g1"
+    assert cluster["project_name"] == "Project1"
+    assert cluster["cluster_id"] == "c1"
+    assert cluster["cluster_name"] == "Cluster1"
+    assert cluster["cluster_type"] == "REPLICASET"
+    assert cluster["cluster_alerts"] == 2
+    assert cluster["cluster_availability"] == "Available"
+    assert cluster["cluster_auth_enabled"] is True
+    assert cluster["cluster_backup_enabled"] is False
+    assert cluster["cluster_ssl_enabled"] is True
+    assert cluster["cluster_versions"] == ["6.0"]
 
-    with patch.object(
-        mock_mongoatlas_client, "send_api_request", new_callable=AsyncMock
-    ) as mock_request:
-        mock_request.return_value = clusters_data
-        result = await mock_mongoatlas_client.send_api_request(endpoint="/v2/clusters", method="GET")
+@pytest.mark.asyncio
+@patch.object(MongoAtlasClient, "send_api_request", new_callable=AsyncMock)
+async def test_get_clusters_empty_results(mock_send_api_request, client):
+    mock_send_api_request.return_value = {"results": []}
+    clusters = await client.get_clusters()
+    assert clusters == []
 
-        mock_request.assert_called_once_with(
-            endpoint="/v2/clusters", method="GET"
-        )
-        assert result == clusters_data
+@pytest.mark.asyncio
+@patch.object(MongoAtlasClient, "send_api_request", new_callable=AsyncMock)
+async def test_get_clusters_malformed_results(mock_send_api_request, client):
+    mock_send_api_request.return_value = {"results": "notalist"}
+    with pytest.raises(ValueError):
+        await client.get_clusters()

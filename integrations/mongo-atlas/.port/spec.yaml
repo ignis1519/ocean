@@ -6,13 +6,11 @@ features:
     resources:
       - kind: mongo-atlas-cluster
 configurations:
-  - name: mongoAtlasPublicKey
-    description: Public key for MongoDB Atlas API access.
+  - name: mongoAtlasClientId
+    description: Client ID for MongoDB Atlas API access.
     required: true
     type: string
-    sensitive: true
-  - name: mongoAtlasPrivateKey
-    description: Private key for MongoDB Atlas API access.
+  - name: mongoAtlasClientSecret
+    description: Client secret for MongoDB Atlas API access.
     required: true
     type: string
-    sensitive: true

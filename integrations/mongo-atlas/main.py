@@ -9,17 +9,16 @@ from kinds import Kinds as ObjectKind
 ## Helper function to initialize the MongoAtlas client
 def init_client() -> MongoAtlasClient:
     return MongoAtlasClient(
-        ocean.integration_config["mongoatlas_public_key"],
-        ocean.integration_config["mongoatlas_private_key"],
+        ocean.integration_config["mongo_atlas_client_id"],
+        ocean.integration_config["mongo_atlas_client_secret"],
     )
 
 
 @ocean.on_resync(ObjectKind.CLUSTER)
-async def on_resync_projects(kind: str) -> ASYNC_GENERATOR_RESYNC_TYPE:
+async def on_resync_clusters(kind: str) -> ASYNC_GENERATOR_RESYNC_TYPE:
     # This function will only be called for CLUSTER kind
     client = init_client()
-    async for clusters in client.get_clusters():
-        yield clusters
+    return await client.get_clusters()  # Await the coroutine
 
 
 @ocean.on_start()
