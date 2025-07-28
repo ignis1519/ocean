@@ -1,0 +1,75 @@
+[{
+  "identifier": "mongo_atlas_cluster",
+  "description": "Represents a Mongo Atlas Cluster instance in a given organization",
+  "title": "Mongo Atlas Cluster",
+  "icon": "MongoDb",
+  "schema": {
+    "properties": {
+      "organization_name": {
+        "type": "string",
+        "title": "Organization Name"
+      },
+      "organization_id": {
+        "type": "string",
+        "title": "Organization ID"
+      },
+      "project_name": {
+        "type": "string",
+        "title": "Project Name"
+      },
+      "project_id": {
+        "type": "string",
+        "title": "Project ID"
+      },
+      "cluster_name": {
+        "type": "string",
+        "title": "Cluster Name"
+      },
+      "cluster_id": {
+        "type": "string",
+        "title": "Cluster ID"
+      },
+      "cluster_type": {
+        "type": "string",
+        "title": "Cluster Type"
+      },
+      "cluster_alerts": {
+        "icon": "DefaultProperty",
+        "type": "number",
+        "title": "Cluster Alerts",
+        "default": 0
+      },
+      "cluster_availability": {
+        "type": "string",
+        "title": "Cluster Availability",
+        "enum": [
+          "Available",
+          "Dead",
+          "Warning",
+          "Unavailable"
+        ],
+        "enumColors": {
+          "Available": "lightGray",
+          "Dead": "lightGray",
+          "Warning": "lightGray",
+          "Unavailable": "lightGray"
+        }
+      }
+    },
+    "required": [
+      "organization_name",
+      "organization_id",
+      "project_name",
+      "project_id",
+      "cluster_name",
+      "cluster_id",
+      "cluster_type",
+      "cluster_alerts",
+      "cluster_availability"
+    ]
+  },
+  "mirrorProperties": {},
+  "calculationProperties": {},
+  "aggregationProperties": {},
+  "relations": {}
+}]

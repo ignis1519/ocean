@@ -1,0 +1,18 @@
+description: mongo-atlas integration for Port Ocean
+icon: mongodb
+features:
+  - type: exporter
+    section: Under Development
+    resources:
+      - kind: mongo-atlas-cluster
+configurations:
+  - name: mongoAtlasPublicKey
+    description: Public key for MongoDB Atlas API access.
+    required: true
+    type: string
+    sensitive: true
+  - name: mongoAtlasPrivateKey
+    description: Private key for MongoDB Atlas API access.
+    required: true
+    type: string
+    sensitive: true
