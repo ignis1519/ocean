@@ -1,0 +1,12 @@
+helm upgrade --install mongo-atlas port-labs/port-ocean \
+  --set imageRegistry=local \
+  --set imagePullPolicy=IfNotPresent \
+  --set port.clientId="${OCEAN__PORT__CLIENT_ID}" \
+  --set port.clientSecret="${OCEAN__PORT__CLIENT_SECRET}" \
+  --set port.baseUrl="https://api.getport.io" \
+  --set initializePortResources=true \
+  --set integration.identifier="mongo-atlas" \
+  --set integration.type="mongo-atlas" \
+  --set integration.eventListener.type="POLLING" \
+  --set integration.secrets.OCEAN__INTEGRATION__CONFIG__MONGO_ATLAS_CLIENT_ID="${OCEAN__INTEGRATION__CONFIG__MONGO_ATLAS_CLIENT_ID}" \
+  --set integration.secrets.OCEAN__INTEGRATION__CONFIG__MONGO_ATLAS_CLIENT_SECRET_SECRET="${OCEAN__INTEGRATION__CONFIG__MONGO_ATLAS_CLIENT_SECRET_SECRET}"
